@@ -8,3 +8,4 @@ data/input/*
 data/output/*
 !data/input/.gitkeep
 !data/output/.gitkeep
+*.py
