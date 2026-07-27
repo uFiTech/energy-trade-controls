@@ -6,7 +6,7 @@ from src.validation.workbook_structure import (
 )
 
 
-def test_find_missing_sheets_returns_empty_when_all_exit() -> None:
+def test_find_missing_sheets_returns_empty_when_all_exist() -> None:
     """No sheets should be reported when every requirement is present."""
     actual_sheets = [*REQUIRED_SHEETS, "Dashboard", "Claims"]
 
