@@ -3,8 +3,10 @@
 from src.validation.workbook_structure import (
     REQUIRED_SHEETS,
     REQUIRED_TABLES,
+    EXPECTED_TABLE_LOCATIONS,
     find_missing_sheets,
     find_missing_tables,
+    find_misplaced_tables,
 )
 
 
@@ -79,3 +81,40 @@ def test_find_missing_tables_returns_all_when_mapping_is_empty() -> None:
 
     assert result == list(REQUIRED_TABLES)
 
+
+def test_find_misplaced_tables_returns_empty_when_locations_correct() -> None:
+    """Correctly located tables should produce no mismatches."""
+    discovered_tables = dict(EXPECTED_TABLE_LOCATIONS)
+
+    result = find_misplaced_tables(discovered_tables)
+
+    assert result == {}
+
+
+def test_find_misplaced_tables_reports_expected_and_actual_locations() -> None:
+    """A misplaced table should report both worksheet locations."""
+    discovered_tables = {
+        "tblTrades": "Trades",
+        "tblInvoices": "Payments",
+        "tblPayments": "Payments",
+    }
+
+    result = find_misplaced_tables(discovered_tables)
+
+    assert result == {
+        "tblInvoices": {
+            "expected": "Invoices",
+            "actual": "Payments",
+        }
+    }
+
+
+def test_find_misplaced_tables_ignores_missing_tables() -> None:
+    """Missing tables should be handled only by missing table validation."""
+    discovered_tables = {
+        "tblTrades": "Trades",
+    }
+
+    result = find_misplaced_tables(discovered_tables)
+
+    assert result == {}

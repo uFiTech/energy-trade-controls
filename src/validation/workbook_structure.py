@@ -21,6 +21,15 @@ REQUIRED_TABLES: tuple[str, ...] = (
     "tblServiceCommitments",
 )
 
+EXPECTED_TABLE_LOCATIONS: dict[str, str] = {
+    "tblTrades": "Trades",
+    "tblMovements": "Movements",
+    "tblInvoices": "Invoices",
+    "tblPayments": "Payments",
+    "tblInvoiceCharges": "Invoice Charges",
+    "tblServiceCommitments": "Service Commitments",
+}
+
 
 def find_missing_sheets(
         actual_sheets: Sequence[str],
@@ -35,7 +44,6 @@ def find_missing_sheets(
     Returns:
         Missing workbook names in required-sheet order.
     """
-
     actual_sheet_names = set(actual_sheets)
 
     return [
@@ -63,3 +71,37 @@ def find_missing_tables(
         for table in required_tables
         if table not in discovered_tables
     ]
+
+
+def find_misplaced_tables(
+        discovered_tables: Mapping[str, str],
+        expected_locations: Mapping[str, str] =  EXPECTED_TABLE_LOCATIONS,
+) -> dict[str, dict[str, str]]:
+    """Returns required tables located on wrong worksheets.
+    
+    Missing tables are ignored because they are handled by
+    find_missing_tables.
+    
+    Args:
+        discovered_tables: Mapping of table names to actual worksheets.
+        expected_locations: Mapping of table names to expected worksheets.
+        
+    Returns:
+        A mapping describing the expected and actual worksheet for each
+        misplaced table.
+    """
+    misplaced_tables: dict[str, dict[str, str]] = {}
+
+    for table_name, expected_worksheet in expected_locations.items():
+        if table_name not in discovered_tables:
+            continue
+
+        actual_worksheet = discovered_tables[table_name]
+
+        if actual_worksheet != expected_worksheet:
+            misplaced_tables[table_name] = {
+                "expected": expected_worksheet,
+                "actual": actual_worksheet,
+            }
+
+    return misplaced_tables
