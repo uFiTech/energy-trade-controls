@@ -1,6 +1,6 @@
 """Validation functions for workbook structure."""
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 
 REQUIRED_SHEETS: tuple[str, ...] = (
@@ -10,6 +10,15 @@ REQUIRED_SHEETS: tuple[str, ...] = (
     "Payments",
     "Invoice Charges",
     "Service Commitments",
+)
+
+REQUIRED_TABLES: tuple[str, ...] = (
+    "tblTrades",
+    "tblMovements",
+    "tblInvoices",
+    "tblPayments",
+    "tblInvoiceCharges",
+    "tblServiceCommitments",
 )
 
 
@@ -33,4 +42,24 @@ def find_missing_sheets(
         sheet
         for sheet in required_sheets
         if sheet not in actual_sheet_names
+    ]
+
+
+def find_missing_tables(
+        discovered_tables: Mapping[str, str],
+        required_tables: Sequence[str] = REQUIRED_TABLES,
+) -> list[str]:
+    """Return required Excel table names that are missing.
+    
+    Args:
+        discovered_tables: Mapping of Excel table names to worksheet names.
+        required_tables: Excel table names required by the automation.
+        
+    Returns:
+        Missing table names in required-table-order.
+    """
+    return [
+        table
+        for table in required_tables
+        if table not in discovered_tables
     ]

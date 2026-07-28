@@ -17,7 +17,6 @@ def list_workbook_sheets(workbook_path: str | Path) -> list[str]:
     Raises:
         FileNotFoundError: If the workbook does not exist.
     """
-
     path = Path(workbook_path)
 
     if not path.is_file():
@@ -49,7 +48,6 @@ def map_workbook_tables(workbook_path: str | Path) -> dict[str, str]:
         FileNotFoundError: If the supplied workbook does not exist.
         ValueError: If the same table name is found more than once.
      """
-
     path = Path(workbook_path)
 
     if not path.is_file():
