@@ -9,6 +9,7 @@ from openpyxl.worksheet.table import Table
 from src.ingestion.workbook_reader import (
     list_workbook_sheets,
     map_workbook_tables,
+    read_excel_table,
     )
 
 
@@ -101,3 +102,94 @@ def test_map_workbook_tables_raises_when_file_missing(
     with pytest.raises(FileNotFoundError, match="Workbook not found"):
         map_workbook_tables(missing_path)
 
+
+def test_read_excel_table_returns_dataframe_records(
+        tmp_path: Path,
+) -> None:
+    """A populated Excel table should become a DataFrame."""
+    workbook_path = tmp_path / "test_portfolio.xlsx"
+
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.title = "Trades"
+
+    worksheet.append(["Trade ID", "Quantity"])
+    worksheet.append(["TRD-1001", 100_000])
+    worksheet.append(["TRD-1002", 75_000])
+
+    worksheet.add_table(
+        Table(
+            displayName="tblTrades",
+            ref="A1:B3",
+        )
+    )
+
+    workbook.save(workbook_path)
+    workbook.close()
+
+    result = read_excel_table(workbook_path, "tblTrades")
+
+    assert list(result.columns) == ["Trade ID", "Quantity"]
+    assert result.to_dict(orient="records") == [
+        {
+             "Trade ID": "TRD-1001",
+             "Quantity": 100_000,
+        },
+        {
+            "Trade ID": "TRD-1002",
+            "Quantity": 75_000,
+        },
+    ]
+
+
+def test_read_excel_table_preserves_header_only_table(
+        tmp_path: Path,
+) -> None:
+    """A header-only table should return an empty DataFrame with columns."""
+    workbook_path = tmp_path / "header_only.xlsx"
+    
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.title = "Trades"
+
+    worksheet.append(["Trade ID", "Quantity"])
+
+    worksheet.add_table(
+        Table(
+            displayName="tblTrades",
+            ref="A1:B1",
+        )
+    )
+
+    workbook.save(workbook_path)
+    workbook.close()
+
+    result = read_excel_table(workbook_path, "tblTrades")
+
+    assert result.empty
+    assert list(result.columns) == ["Trade ID", "Quantity"]
+    assert len(result) == 0
+
+
+def test_read_excel_table_raises_when_table_missing(
+        tmp_path: Path,
+) -> None:
+    """A missing structured table should raise a clear key error."""
+    workbook_path = tmp_path / "missing_portfolio.xlsx"
+
+    workbook = Workbook()
+    workbook.save(workbook_path)
+    workbook.close()
+
+    with pytest.raises(KeyError, match="Excel table not found"):
+        read_excel_table(workbook_path, "tblTrades")
+
+
+def test_read_excel_table_raises_when_workbook_missing(
+        tmp_path: Path,
+) -> None:
+    """A missing workbook should raise a clear file-not-found error."""
+    missing_path = tmp_path / "missing_portfolio.xlsx"
+
+    with pytest.raises(FileNotFoundError, match="Workbook not found"):
+        read_excel_table(missing_path, "tblTrades")
