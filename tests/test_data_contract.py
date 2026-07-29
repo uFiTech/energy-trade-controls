@@ -1,10 +1,11 @@
 """Tests for tabular data-contract validation."""
-
+import pytest
 import pandas as pd
 
 from src.validation.data_contract import (
     REQUIRED_TRADE_COLUMNS,
     find_missing_columns,
+    find_primary_key_issues,
 )
 
 
@@ -64,3 +65,80 @@ def test_find_missing_columns_allows_extra_columns() -> None:
      )
 
      assert result == []
+
+
+def test_find_primary_key_issues_returns_empty_when_keys_valid() -> None:
+     """Unique, nonblank keys should produce no issues."""
+     dataframe = pd.DataFrame(
+          {
+               "Trade ID": [
+                    "TRD-1001",
+                    "TRD-1002",
+                    "TRD-1003",
+               ]
+          }
+     )
+
+     result = find_primary_key_issues(dataframe,"Trade ID")
+
+     assert result == {
+         "blank_row_indexes": [],
+         "duplicate_values": [],
+     }
+
+
+def test_find_primary_key_issues_identifies_blank_keys() -> None:
+    """Missing, empty and whitespace-only keys should all be blank."""
+    dataframe = pd.DataFrame(
+         {
+              "Trade ID": [
+                   "TRD-1001",
+                   None,
+                   "",
+                   "   ",
+              ]
+         }
+    )
+
+    result = find_primary_key_issues(dataframe, "Trade ID")
+
+    assert result == {
+         "blank_row_indexes": [1, 2, 3],
+         "duplicate_values": [],
+    }
+
+
+def test_find_primary_key_issues_normalizes_duplicate_keys() -> None:
+    """Surrounding spaces should not hide duplicate identifiers."""
+    dataframe = pd.DataFrame(
+        {
+            "Trade ID": [
+                "TRD-1001",
+                " TRD-1001 ",
+                "TRD-1002",
+            ]
+        }
+    )
+
+    result = find_primary_key_issues(dataframe, "Trade ID")
+
+    assert result == {
+        "blank_row_indexes": [],
+        "duplicate_values": ["TRD-1001"],
+    }
+
+
+def test_find_primary_key_issues_raises_when_column_missing() -> None:
+    """A missing primary-key column should raise a clear error."""
+    dataframe = pd.DataFrame(
+        {
+            "Product Code": ["ULSD-US"],
+        }
+    )
+
+    with pytest.raises(
+         KeyError,
+         match="Primary key column not found",
+
+    ):
+         find_primary_key_issues(dataframe, "Trade ID")
