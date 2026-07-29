@@ -82,3 +82,71 @@ def find_primary_key_issues(
         "blank_row_indexes": blank_row_indexs,
         "duplicate_values": duplicate_values,
     }
+
+
+def find_foreign_key_issues(child_dataframe: pd.DataFrame,
+                            foreign_key: str,
+                            parent_dataframe: pd.DataFrame,
+                            parent_key: str,
+) -> dict[str, list[int] | list[str]]:
+    """Return child records whose foreign keys do not exist in the parent.
+
+    Blank child keys are ignored because required-field validation should
+    report them separately. Values are converted to text and stripped of
+    surrounding whitespace before comparison.
+
+    Args:
+        child_dataframe: Dataset containing references to parent records.
+        foreign_key: Child column containing the parent reference.
+        parent_dataframe: Master or parent dataset.
+        parent_key: Parent column containing valid identifiers.
+
+    Returns:
+        A mapping containing orphan row indexes and distinct orphan values.
+
+    Raises:
+        KeyError: If either required column does not exist.
+    """
+    if foreign_key not in child_dataframe:
+        raise KeyError(f"Foreign key column not found: {foreign_key}")
+
+    if parent_key not in parent_dataframe:
+        raise KeyError(f"Parent key column not found: {parent_key}")
+
+    child_keys = (
+        child_dataframe[foreign_key]
+        .astype("string")
+        .fillna("")
+        .str.strip()
+    )
+
+    parent_keys = (
+        parent_dataframe[parent_key]
+        .astype("string")
+        .fillna("")
+        .str.strip()
+    )
+
+    valid_parent_keys = set(
+        parent_keys[parent_keys.ne("")]
+    )
+
+    orphan_mask = (
+        child_keys.ne("")
+        & ~child_keys.isin(valid_parent_keys)
+    )
+
+    orphan_row_indexes = child_dataframe.index[
+        orphan_mask
+    ].tolist()
+
+    orphan_values = list(
+        dict.fromkeys(
+            child_keys[orphan_mask].tolist()
+        )
+    )
+
+    return {
+        "orphan_row_indexes": orphan_row_indexes,
+        "orphan_values": orphan_values,
+    }

@@ -6,6 +6,7 @@ from src.validation.data_contract import (
     REQUIRED_TRADE_COLUMNS,
     find_missing_columns,
     find_primary_key_issues,
+    find_foreign_key_issues,
 )
 
 
@@ -134,11 +135,171 @@ def test_find_primary_key_issues_raises_when_column_missing() -> None:
         {
             "Product Code": ["ULSD-US"],
         }
-    )
+     )
 
     with pytest.raises(
          KeyError,
          match="Primary key column not found",
 
-    ):
+     ):
          find_primary_key_issues(dataframe, "Trade ID")
+
+
+def test_find_foreign_key_issues_returns_empty_when_links_valid() -> None:
+     """Valid foreign keys and blank optional keys should not be orphans."""
+     trades = pd.DataFrame(
+          {
+               "Counterparty ID": [
+                    "CP-001",
+                    "CP-002",
+                    None,
+                    "",
+               ]
+          }
+     )
+
+     counterparties = pd.DataFrame(
+          {
+               "Counterparty ID": [
+                    "CP-001",
+                    "CP-002",
+                    "CP-003",
+               ]
+          }
+     )
+
+     result = find_foreign_key_issues(
+          trades,
+          "Counterparty ID",
+          counterparties,
+          "Counterparty ID",
+     )
+
+     assert result == {
+        "orphan_row_indexes": [],
+        "orphan_values": [],
+     }
+
+
+def test_find_foreign_key_issues_identifies_orphans() -> None:
+     """Unknown foreign keys should report their rows and values."""
+     trades = pd.DataFrame(
+        {
+            "Counterparty ID": [
+                "CP-001",
+                "CP-999",
+                "CP-002",
+                "CP-999",
+                "CP-888",
+            ]
+        }
+    )
+
+     counterparties = pd.DataFrame(
+        {
+            "Counterparty ID": [
+                "CP-001",
+                "CP-002",
+            ]
+        }
+    )
+
+     result = find_foreign_key_issues(
+          trades,
+          "Counterparty ID",
+          counterparties,
+          "Counterparty ID",
+     )
+
+     assert result == {
+        "orphan_row_indexes": [1, 3, 4],
+        "orphan_values": ["CP-999", "CP-888"],
+    }
+
+
+def test_find_foreign_key_issues_normalizes_spaces() -> None:
+    """Surrounding spaces should not create false orphan records."""
+    trades = pd.DataFrame(
+        {
+            "Counterparty ID": [
+                " CP-002 ",
+            ]
+        }
+    )
+
+    counterparties = pd.DataFrame(
+        {
+            "Counterparty ID": [
+                "CP-002",
+            ]
+        }
+    )
+
+    result = find_foreign_key_issues(
+        trades,
+        "Counterparty ID",
+        counterparties,
+        "Counterparty ID",
+    )
+
+    assert result == {
+        "orphan_row_indexes": [],
+        "orphan_values": [],
+    }
+
+
+def test_find_foreign_key_issues_raises_when_child_column_missing() -> None:
+    """A missing child foreign-key column should raise a clear error."""
+    trades = pd.DataFrame(
+        {
+            "Trade ID": ["TRD-1001"],
+        }
+    )
+
+    counterparties = pd.DataFrame(
+        {
+            "Counterparty ID": ["CP-001"],
+        }
+    )
+
+    with pytest.raises(
+         KeyError,
+         match="Foreign key column not found",
+    ):
+         find_foreign_key_issues(
+              trades,
+              "Counterparty ID",
+              counterparties,
+              "Counterparty ID",
+         )
+
+
+def test_find_foreign_key_issues_raises_when_parent_column_missing() -> None:
+    """A missing parent-key column should raise a clear error."""
+    trades = pd.DataFrame(
+        {
+            "Counterparty ID": ["CP-001"],
+        }
+    )
+
+    counterparties = pd.DataFrame(
+        {
+            "Counterparty Name": ["Example Energy"],
+        }
+    )
+
+    with pytest.raises(
+        KeyError,
+        match="Parent key column not found",
+    ):
+        find_foreign_key_issues(
+            trades,
+            "Counterparty ID",
+            counterparties,
+            "Counterparty ID",
+        )
+
+
+     
+
+     
