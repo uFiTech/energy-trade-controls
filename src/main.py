@@ -21,6 +21,9 @@ from src.ingestion.workbook_reader import read_excel_table
 from src.reporting.exception_report import (
     build_consolidated_exception_report,
 )
+from src.reporting.excel_formatter import (
+    format_control_report,
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -153,6 +156,8 @@ def run_controls(
             sheet_name="Settlement Exceptions",
             index=False,
         )
+
+    format_control_report(output_path)
 
     return summary, linked_report
 
