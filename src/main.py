@@ -1,5 +1,6 @@
 """Run the end-to-end energy trade settlement control workflow."""
 
+import argparse
 from pathlib import Path
 
 import pandas as pd
@@ -157,8 +158,40 @@ def run_controls(
 
 
 def main() -> None:
-    """Run the control and print an operational summary."""
-    summary, _ = run_controls()
+    """Parse command-line arguments and run the controls."""
+    parser = argparse.ArgumentParser(
+        description=(
+            "Run energy-trade settlement controls and generate "
+            "an Excel exception report."
+        )   
+    )
+
+    parser.add_argument(
+        "--input",
+        type=Path,
+        default=DEFAULT_INPUT_PATH,
+        help=(
+            "Path to the source workbook. "
+            "Defaults to data/input/portfolio.xlsx."
+        ),
+    )
+
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=DEFAULT_OUTPUT_PATH,
+        help=(
+            "Path for the generated exception report. "
+            "Defaults to data/output/settlement_exceptions.xlsx."
+        ),
+    )
+
+    args = parser.parse_args()
+
+    summary, _ = run_controls(
+        workbook_path=args.input,
+        output_path=args.output,
+    )
 
     print()
     print("Energy Trade Controls Run")
@@ -193,10 +226,8 @@ def main() -> None:
         f"{summary['Overall Status']}"
     )
     print()
-    print(
-        "Report written to:"
-    )
-    print(DEFAULT_OUTPUT_PATH)
+    print("Report written to:")
+    print(args.output.resolve())
 
 
 if __name__ == "__main__":
