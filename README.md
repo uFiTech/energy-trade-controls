@@ -2,43 +2,39 @@
 
 A Python-based settlement-control framework for a fictional physical-energy trading portfolio.
 
-The project ingests governed Excel data, independently reconciles payments and invoices, identifies settlement exceptions, distinguishes active issues from controlled exclusions, links related control observations into settlement cases, and produces a formatted Excel exception report.
+The project ingests governed Excel data, independently reconciles payments and invoices, identifies settlement exceptions, distinguishes active issues from controlled exclusions, links related observations into settlement cases, and produces a formatted Excel exception report.
 
-A fully synthetic demo workbook is included so the workflow can be reproduced without access to the larger portfolio workbook.
+A fully synthetic demo is included so the workflow can be cloned, tested, and run without access to the larger portfolio workbook.
 
 ---
 
 ## Business problem
 
-Physical commodity settlement data rarely behaves like a simple one-invoice / one-payment process.
+Physical commodity settlements rarely behave like a simple one-invoice / one-payment process.
 
 Operational scenarios can include:
 
-- one payment allocated across multiple invoices;
-- multiple payments applied to one invoice;
-- partial cash receipts;
-- unapplied cash;
-- open invoice balances;
-- overallocations;
-- cancelled or rejected invoices;
-- reported balances that disagree with independently calculated balances;
-- multiple control observations relating to the same underlying settlement issue.
+* one payment allocated across multiple invoices;
+* multiple payments applied to one invoice;
+* partial cash receipts;
+* unapplied cash;
+* open invoice balances;
+* overallocations;
+* cancelled or rejected invoices;
+* reported balances that disagree with transaction-level evidence;
+* multiple control observations relating to the same economic issue.
 
-A useful settlement-control process therefore needs to answer two separate questions.
+The framework therefore answers two independent questions.
 
-### Payment-side question
-
-For each payment:
+### Payment side
 
 > Has the full payment amount been allocated to invoices, or is cash still unallocated or overallocated?
 
-### Invoice-side question
-
-For each invoice:
+### Invoice side
 
 > Do recorded payment allocations support the invoice's reported outstanding balance?
 
-The framework calculates those questions independently before applying operational classification.
+The calculations are performed before operational statuses are used to interpret the result.
 
 ---
 
@@ -75,7 +71,7 @@ Payment Reconciliation        Invoice Reconciliation
 
 Settlement cases are linked using actual payment-allocation records rather than matching exception amounts.
 
-That distinction is important: two observations having the same dollar amount may be a useful clue, but it is not authoritative evidence that they belong to the same settlement event.
+Matching amounts may be a useful clue, but they are not treated as authoritative evidence of a relationship.
 
 ---
 
@@ -89,7 +85,7 @@ Each payment is independently reconciled to the total amount allocated across in
 Payment Amount - Allocated Amount = Unallocated Amount
 ```
 
-Control status:
+Status logic:
 
 ```text
 Within ±$0.01 tolerance      -> PASS
@@ -99,21 +95,19 @@ Negative residual            -> FAIL
 
 A positive residual represents cash that has not yet been fully allocated.
 
-A negative residual represents allocations exceeding the recorded payment amount.
-
-The calculation does not rely on workbook-level summary fields.
+A negative residual represents invoice allocations exceeding the recorded payment amount.
 
 ---
 
 ### 2. Invoice allocation reconciliation
 
-Each invoice is independently reconciled to payment-allocation records.
+Each invoice is reconciled independently to payment-allocation records.
 
 ```text
 Invoice Total - Allocated Amount = Calculated Outstanding Amount
 ```
 
-The independently calculated balance is then compared with the balance reported in the invoice data.
+The calculated balance is then compared with the balance reported in the invoice data.
 
 ```text
 Calculated Outstanding Amount
@@ -141,17 +135,13 @@ Variance outside tolerance   -> REVIEW
 This separates two questions:
 
 1. Has the invoice actually been settled?
-2. Does the reported balance agree with the transaction-level allocation evidence?
+2. Does the reported balance agree with transaction-level allocation evidence?
 
 ---
 
 ### 3. Invoice exception classification
 
-Reconciliation mathematics and operational interpretation are deliberately kept separate.
-
-The framework first calculates the variance and only then considers invoice status.
-
-Examples:
+Reconciliation mathematics and operational interpretation are deliberately separated.
 
 ```text
 Active balance mismatch
@@ -166,13 +156,13 @@ No balance mismatch
 
 Cancelled records remain visible rather than being filtered out before reconciliation.
 
-This preserves the audit trail while distinguishing genuine active exposure from intentionally retained historical records.
+This preserves the control evidence while distinguishing active settlement exposure from intentionally retained historical records.
 
 ---
 
 ### 4. Consolidated exception reporting
 
-Payment-side and invoice-side exceptions are normalized into a common report structure.
+Payment-side and invoice-side findings are normalized into a common exception structure.
 
 Core fields include:
 
@@ -186,7 +176,7 @@ Severity
 Classification
 ```
 
-Examples of exception types include:
+Examples include:
 
 ```text
 UNALLOCATED PAYMENT
@@ -194,17 +184,15 @@ OVERALLOCATED PAYMENT
 BALANCE MISMATCH
 ```
 
-The consolidated report intentionally distinguishes a **control observation** from an underlying economic issue.
+A control observation is not automatically the same thing as an economic issue.
 
-A payment exception and an invoice exception can describe two sides of the same settlement problem.
+For example, a payment exception and an invoice exception may represent two sides of the same settlement problem.
 
 ---
 
 ### 5. Settlement case linkage
 
-Related exception observations are grouped into settlement cases using the payment-allocation ledger.
-
-For example:
+Related observations are grouped into settlement cases using the payment-allocation ledger.
 
 ```text
 PAYMENT PAY-xxxx
@@ -215,9 +203,7 @@ PAYMENT PAY-xxxx
 INVOICE INV-xxxx
 ```
 
-The linkage logic models exception observations as connected records.
-
-This supports:
+The linkage supports:
 
 ```text
 one payment -> one invoice
@@ -236,8 +222,6 @@ Link Basis
 
 Records without a direct exception-to-exception allocation relationship remain visible as standalone cases.
 
-This prevents amount matching from being used as a substitute for transactional evidence.
-
 ---
 
 ## Quick-start demo
@@ -254,13 +238,13 @@ Generate the synthetic demo workbook:
 python scripts/generate_demo_workbook.py
 ```
 
-The generator writes a disposable workbook to:
+The generator writes:
 
 ```text
 data/output/generated_demo_portfolio.xlsx
 ```
 
-Run the settlement controls:
+Run the controls:
 
 ```powershell
 python -m src.main `
@@ -268,23 +252,19 @@ python -m src.main `
     --output data/output/demo_settlement_exceptions.xlsx
 ```
 
-The repository also includes:
+The repository also includes a committed reference workbook:
 
 ```text
 data/demo/demo_portfolio.xlsx
 ```
 
-as a committed reference copy.
-
-The generator writes a separate workbook under `data/output/` so running the documented demo workflow does not modify tracked files.
+The generator writes a separate disposable copy under `data/output/`, so running the documented workflow does not modify tracked files.
 
 ---
 
 ## Expected demo result
 
-The synthetic demo is designed to exercise both clean and exception scenarios.
-
-A successful run produces approximately:
+A successful demo run produces:
 
 ```text
 Energy Trade Controls Run
@@ -299,7 +279,7 @@ Controlled-exclusion cases:      1
 Overall status: REVIEW
 ```
 
-`REVIEW` does **not** mean the Python application failed.
+`REVIEW` does not mean the application failed.
 
 It means:
 
@@ -314,11 +294,11 @@ The application completed successfully and identified settlement conditions requ
 
 ## Generated Excel report
 
-The control runner produces a formatted Excel workbook containing two worksheets.
+The runner produces a formatted Excel workbook with two worksheets.
 
 ### Run Summary
 
-Provides high-level execution and control metrics including:
+Includes:
 
 ```text
 Overall Status
@@ -330,16 +310,16 @@ Action-Required Cases
 Controlled-Exclusion Cases
 ```
 
-The worksheet includes generated presentation formatting such as:
+Presentation features include:
 
-- formatted headers;
-- frozen panes;
-- readable column widths;
-- visual status highlighting.
+* formatted headers;
+* frozen panes;
+* readable column widths;
+* status highlighting.
 
 ### Settlement Exceptions
 
-Provides record-level settlement observations including:
+Includes:
 
 ```text
 Control Area
@@ -354,51 +334,46 @@ Related Records
 Link Basis
 ```
 
-The generated worksheet includes:
+Presentation features include:
 
-- Excel table filters;
-- frozen headers;
-- currency formatting;
-- readable column widths;
-- severity highlighting;
-- action-required versus controlled-exclusion highlighting.
+* Excel table filters;
+* frozen headers;
+* currency formatting;
+* readable column widths;
+* severity highlighting;
+* action-required and controlled-exclusion highlighting.
 
-Formatting is applied only after the control calculations have completed.
+Formatting is applied only after control calculations have completed.
 
-The presentation layer does not change reconciliation values, statuses, classifications, or settlement-case relationships.
+The presentation layer does not alter reconciliation values, statuses, classifications, or settlement-case relationships.
 
 ---
 
 ## Synthetic demo scenarios
 
-The generated demo contains deliberately designed settlement conditions.
+| Scenario                                     | Purpose                                                      |
+| -------------------------------------------- | ------------------------------------------------------------ |
+| Fully settled payment and invoice            | Clean PASS result                                            |
+| Partially allocated payment                  | Demonstrates unallocated cash                                |
+| Incorrectly reported zero invoice balance    | Demonstrates a balance mismatch                              |
+| Overallocated payment                        | Demonstrates allocations exceeding cash received             |
+| Cancelled invoice with retained discrepancy  | Demonstrates a controlled exclusion                          |
+| Legitimate open invoice with correct balance | Shows that an open invoice is not automatically an exception |
 
-| Scenario | Purpose |
-|---|---|
-| Fully settled payment and invoice | Demonstrates a clean PASS result |
-| Partially allocated payment | Demonstrates unallocated cash |
-| Invoice with incorrectly reported zero balance | Demonstrates a reported-balance mismatch |
-| Overallocated payment | Demonstrates allocations exceeding cash received |
-| Cancelled invoice with retained discrepancy | Demonstrates a controlled exclusion |
-| Legitimate open invoice with correctly reported balance | Demonstrates that an open invoice is not automatically an exception |
-
-The purpose of the demo is not to mimic production transaction volume.
-
-It is to provide a small, understandable dataset that exercises the major control paths.
+The demo is intentionally small so each control path can be understood quickly.
 
 ---
 
 ## Testing
 
-The project currently contains **71 automated pytest tests**.
+The project contains **71 automated pytest tests**.
 
-The test suite covers:
+Coverage includes:
 
 ```text
 Workbook sheet discovery
 Structured Excel table discovery
-Required sheet validation
-Required table validation
+Required sheet and table validation
 Expected table locations
 Structured table DataFrame ingestion
 Required-column validation
@@ -411,11 +386,11 @@ Consolidated exception reporting
 Settlement case linkage
 Excel report formatting
 Empty-exception reporting
-End-to-end control orchestration
+End-to-end orchestration
 Generated Excel output
 ```
 
-Run the complete suite with:
+Run the suite with:
 
 ```powershell
 python -m pytest -q
@@ -427,27 +402,9 @@ Expected result:
 71 passed
 ```
 
-Tests use synthetic DataFrames and disposable temporary workbooks so the source portfolio workbook is not modified.
+Tests use synthetic DataFrames and disposable temporary workbooks so source workbooks are not modified.
 
----
-
-## Clean-clone validation
-
-The project has also been tested from a fresh Git clone and a newly created Python virtual environment.
-
-The validation process included:
-
-```text
-Fresh repository clone
-Fresh virtual environment
-Dependency installation from requirements.txt
-71-test regression suite
-Synthetic workbook regeneration
-End-to-end application execution
-Formatted Excel report generation
-```
-
-This verifies that the committed repository is sufficient to reproduce the public demo workflow without relying on the development environment or the larger portfolio workbook.
+The repository has also passed a clean-clone validation using a fresh Git clone, new virtual environment, dependency installation from `requirements.txt`, the full regression suite, synthetic workbook generation, end-to-end execution, and formatted report generation.
 
 ---
 
@@ -465,7 +422,6 @@ energy-trade-controls/
 │   └── output/
 |
 ├── docs/
-|
 ├── logs/
 |
 ├── scripts/
@@ -494,7 +450,6 @@ energy-trade-controls/
 │   └── main.py
 |
 ├── tests/
-|
 ├── .gitignore
 ├── README.md
 └── requirements.txt
@@ -502,7 +457,9 @@ energy-trade-controls/
 
 ---
 
-## Excel ingestion design
+## Technical design
+
+### Structured Excel ingestion
 
 The ingestion layer reads genuine Excel structured tables rather than relying on fixed cell ranges.
 
@@ -514,58 +471,28 @@ tblPaymentAllocations
 tblInvoices
 ```
 
-Structured-table ingestion provides a stronger contract than hard-coded worksheet coordinates because table names represent governed business objects.
+The reader validates the workbook and requested table, reads the table's defined range, returns a pandas DataFrame, and closes the workbook without saving it.
 
-The reader:
+Production ingestion functions treat source workbooks as read-only inputs.
 
-1. validates that the workbook exists;
-2. locates the requested structured table;
-3. reads the table's defined Excel range;
-4. uses the first row as column headers;
-5. returns the table as a pandas DataFrame;
-6. closes the workbook without saving it.
+### Workbook governance
 
-Financial values are read using Excel's saved calculation results where appropriate.
-
-The production ingestion functions do not save the source workbook.
-
----
-
-## Workbook governance controls
-
-The project also contains reusable structural-validation functions.
-
-These include checks for:
+Reusable validation controls cover:
 
 ```text
 Required worksheets
 Required Excel tables
 Expected table-to-sheet locations
 Required DataFrame columns
-Primary-key blanks
-Primary-key duplicates
+Primary-key blanks and duplicates
 Foreign-key orphans
 ```
 
-The validation functions are intentionally separated from business reconciliation controls.
+Structural integrity and financial reconciliation are intentionally separate concerns.
 
-Structural integrity answers:
+### Source immutability
 
-> Is the dataset shaped correctly enough to process?
-
-Settlement reconciliation answers:
-
-> Do the financial relationships reconcile?
-
-Those are related but distinct control questions.
-
----
-
-## Source workbook immutability
-
-The Python controls treat source workbooks as read-only inputs.
-
-Production ingestion functions never save the input workbook.
+Input workbooks are not saved by the production ingestion layer.
 
 Generated reports are written separately under:
 
@@ -573,26 +500,53 @@ Generated reports are written separately under:
 data/output/
 ```
 
-This distinction is deliberate.
+The source workbook is treated as evidence; the generated workbook is a reporting artifact.
 
-The source workbook is evidence.
+### Presentation separation
 
-The generated output workbook is a reporting artifact and can safely be formatted and saved by Python.
+The Excel formatter runs downstream from the control calculations.
+
+It may change presentation properties such as fills, column widths, number formats, filters, and freeze panes, but it does not change business-control values.
 
 ---
 
-## Full portfolio workbook
+## Design principles
+
+1. **Calculate first, interpret second**
+   Reconciliation mathematics are performed before operational status is used for classification.
+
+2. **Preserve exceptions rather than hiding them**
+   Cancelled or excluded records remain visible when they contain a variance.
+
+3. **Use transactional relationships instead of inference**
+   Settlement cases are linked using payment-allocation records rather than amount matching.
+
+4. **Separate observations from economic cases**
+   Multiple control findings can belong to one underlying settlement issue.
+
+5. **Keep source workbooks immutable**
+   Inputs are read without being rewritten.
+
+6. **Test controls independently before orchestration**
+   Reconciliation, validation, classification, linkage, and reporting functions are tested individually before being combined.
+
+7. **Separate presentation from control logic**
+   Workbook formatting occurs only after control results have been produced.
+
+---
+
+## Full portfolio context
 
 The public synthetic demo is intentionally small.
 
-The broader project was developed alongside a substantially larger fictional workbook:
+The broader project was developed alongside a larger fictional workbook:
 
 ```text
 Houston Energy Trade Operations and Demurrage Portfolio
 Version 23
 ```
 
-That workbook contains a wider operational model covering areas such as:
+That workbook contains a wider operational model covering areas including:
 
 ```text
 Trades
@@ -612,51 +566,7 @@ Regression Tests
 
 The larger workbook is maintained separately for portfolio and interview walkthrough purposes.
 
-The public Python repository uses independently generated synthetic data so the application can be cloned, tested, and reviewed without requiring that workbook.
-
----
-
-## Design principles
-
-### 1. Calculate first, interpret second
-
-Financial relationships are reconciled before operational statuses are used to classify the resulting exception.
-
-This prevents status fields from hiding mathematical discrepancies.
-
-### 2. Preserve exceptions rather than hiding them
-
-Cancelled or excluded records remain visible when they contain a reconciliation variance.
-
-Their classification changes, but the underlying control evidence remains available.
-
-### 3. Use transactional relationships instead of inference
-
-Settlement cases are linked through actual payment-allocation records.
-
-Matching dollar amounts alone are not treated as sufficient evidence of a relationship.
-
-### 4. Separate control observations from economic cases
-
-A payment exception and an invoice exception may describe two sides of one settlement event.
-
-The report preserves both observations while settlement-case linkage groups the related records.
-
-### 5. Keep source workbooks immutable
-
-The application reads source workbooks without saving them.
-
-Generated outputs are written to separate locations.
-
-### 6. Test controls independently before orchestration
-
-Core reconciliation, validation, classification, linkage, and reporting functions are tested individually before being combined in the end-to-end runner.
-
-### 7. Separate presentation from control logic
-
-Excel formatting is applied downstream from the reconciliation process.
-
-Formatting may change presentation properties such as fills, widths, number formats, filters, or freeze panes, but it does not alter business-control values.
+The public Python repository uses independently generated synthetic data so it can be reviewed and reproduced without requiring that workbook.
 
 ---
 
@@ -673,26 +583,15 @@ PyYAML
 Git
 ```
 
-`pandas` is used primarily for tabular transformation, reconciliation, grouping, and joining.
+`pandas` handles tabular transformation, grouping, joining, and reconciliation.
 
-`openpyxl` is used where workbook-level Excel features are required, including:
-
-```text
-Structured Excel table discovery
-Structured table creation
-Workbook formatting
-Freeze panes
-Column widths
-Excel table styles
-```
+`openpyxl` handles workbook-level Excel features such as structured tables, formatting, freeze panes, and column widths.
 
 ---
 
 ## Development approach
 
-The project was developed control by control rather than as one large script.
-
-The general implementation sequence was:
+The project was developed control by control:
 
 ```text
 Business rule
@@ -710,40 +609,13 @@ Workbook integration
 End-to-end orchestration
 ```
 
-This made it possible to validate both the financial reasoning and the software behavior independently.
-
----
-
-## Example debugging lessons
-
-Several implementation issues were deliberately resolved through tests rather than hidden.
-
-Examples included:
-
-```text
-Incorrect Excel table name
-Incorrect pandas column name
-Cell objects accidentally used instead of cell values
-Capitalization / spelling mismatches in status columns
-Graph traversal state placed at the wrong indentation level
-Attempting to reopen an Excel file before ExcelWriter had closed it
-```
-
-These failures helped reinforce the role of:
-
-```text
-Exact data contracts
-Scope and indentation
-File lifecycle management
-Focused unit tests
-Diagnostic inspection before changing algorithms
-```
+Testing exposed and helped resolve issues involving exact table and column names, Excel cell-value handling, status spelling, graph traversal scope, and Excel file lifecycle management.
 
 ---
 
 ## Current scope
 
-The implemented application currently focuses on settlement-control logic around:
+The implemented Python application focuses on:
 
 ```text
 Payments
@@ -755,7 +627,7 @@ Settlement case linkage
 Excel exception reporting
 ```
 
-The repository should therefore be viewed as a focused settlement-control application rather than a complete commodity trading platform.
+It should therefore be viewed as a focused settlement-control application rather than a complete commodity trading platform.
 
 ---
 
@@ -764,7 +636,7 @@ The repository should therefore be viewed as a focused settlement-control applic
 Possible extensions include:
 
 ```text
-Integrating additional foreign-key validation into the main runtime pipeline
+Additional foreign-key validation in the main runtime pipeline
 Trade-to-movement reconciliation
 Service commitment and accrual controls
 Demurrage and claims controls
@@ -781,7 +653,7 @@ These are future enhancements and are not represented as currently implemented f
 
 ## Portfolio objective
 
-This project is intended to demonstrate the combination of:
+This project demonstrates the combination of:
 
 ```text
 Physical-energy trade operations knowledge
