@@ -413,16 +413,11 @@ The repository has also passed a clean-clone validation using a fresh Git clone,
 ```text
 energy-trade-controls/
 |
-├── config/
-|
 ├── data/
 │   ├── demo/
 │   │   └── demo_portfolio.xlsx
 │   ├── input/
 │   └── output/
-|
-├── docs/
-├── logs/
 |
 ├── scripts/
 │   └── generate_demo_workbook.py
@@ -440,8 +435,6 @@ energy-trade-controls/
 │   ├── reporting/
 │   │   ├── excel_formatter.py
 │   │   └── exception_report.py
-│   │
-│   ├── utils/
 │   │
 │   ├── validation/
 │   │   ├── data_contract.py
