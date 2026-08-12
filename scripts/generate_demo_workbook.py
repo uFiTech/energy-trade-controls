@@ -12,8 +12,8 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEMO_PATH = (
     PROJECT_ROOT
     / "data"
-    / "demo"
-    / "demo_portfolio.xlsx"
+    / "output"
+    / "generated_demo_portfolio.xlsx"
 )
 
 
