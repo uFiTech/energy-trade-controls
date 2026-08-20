@@ -10,7 +10,7 @@ A fully synthetic demo is included so the workflow can be cloned, tested, and ru
 
 The public Python repository is accompanied by a visual preview of the broader Excel-based physical-energy operations and settlement-control workbook.
 
-[View the Excel Portfolio Preview](portfolio/Energy_Trade_Operations_Excel_Portfolio_Preview.pdf)
+[View the Excel Portfolio Preview (PDF)](https://raw.githubusercontent.com/uFiTech/energy-trade-controls/main/portfolio/Energy_Trade_Operations_Excel_Portfolio_Preview.pdf)
 
 The preview includes selected views of the executive dashboard, settlement architecture, payment allocations, invoice balance reconciliation, operational exceptions, demurrage controls, and workbook governance.
 
