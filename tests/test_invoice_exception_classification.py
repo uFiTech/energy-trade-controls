@@ -13,7 +13,7 @@ def test_classifies_active_balance_mismatch_as_action_required() -> None:
     reconciliation = pd.DataFrame(
         {
             "Invoice ID": ["INV-1001"],
-            "Reported Balance Status": ["REVIEW"],
+            "Balance Reconciliation Status": ["REVIEW"],
             "Outstanding Variance": [5_000.00],
         }
     )
@@ -28,7 +28,7 @@ def test_classifies_active_balance_mismatch_as_action_required() -> None:
     result = classify_invoice_balance_exceptions(
         reconciliation,
         invoices,
-        )
+    )
 
     assert result.loc[0, "Settlement Scope"] == "ACTIVE"
     assert result.loc[0, "Exception Classification"] == "ACTION REQUIRED"
@@ -39,7 +39,7 @@ def test_classifies_cancelled_mismatch_as_controlled_exclusion() -> None:
     reconciliation = pd.DataFrame(
         {
             "Invoice ID": ["INV-1002"],
-            "Reported Balance Status": ["REVIEW"],
+            "Balance Reconciliation Status": ["REVIEW"],
             "Outstanding Variance": [1_500.00],
         }
     )
@@ -69,7 +69,7 @@ def test_classifies_balanced_invoice_as_clear() -> None:
     reconciliation = pd.DataFrame(
         {
             "Invoice ID": ["INV-1003"],
-            "Reported Balance Status": ["PASS"],
+            "Balance Reconciliation Status": ["PASS"],
         }
     )
 
@@ -94,7 +94,7 @@ def test_normalizes_cancelled_invoice_status() -> None:
     reconciliation = pd.DataFrame(
         {
             "Invoice ID": ["INV-1004"],
-            "Reported Balance Status": ["REVIEW"],
+            "Balance Reconciliation Status": ["REVIEW"],
         }
     )
 
@@ -122,7 +122,7 @@ def test_retains_reconciliation_row_when_invoice_status_is_missing() -> None:
     reconciliation = pd.DataFrame(
         {
             "Invoice ID": ["INV-1005"],
-            "Reported Balance Status": ["REVIEW"],
+            "Balance Reconciliation Status": ["REVIEW"],
         }
     )
 
@@ -173,7 +173,7 @@ def test_raises_when_invoice_column_is_missing() -> None:
     reconciliation = pd.DataFrame(
         {
             "Invoice ID": ["INV-1007"],
-            "Reported Balance Status": ["PASS"],
+            "Balance Reconciliation Status": ["PASS"],
         }
     )
 

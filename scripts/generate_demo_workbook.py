@@ -201,10 +201,10 @@ def build_demo_workbook() -> Workbook:
         sheet_name="Invoices",
         table_name="tblInvoices",
         headers=[
-             "Invoice ID",
+            "Invoice ID",
             "Trade ID",
             "Invoice Total",
-            "Outstanding Amount",
+            "Reported Outstanding Amount",
             "Invoice Status",
             "Notes",
         ],

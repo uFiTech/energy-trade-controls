@@ -8,13 +8,13 @@ from src.controls.invoice_reconciliation import (
 )
 
 
-def test_reconcile_invoice_allocations_returns_pass_when_fully_settled() -> None:
-    "A fully allocated invoice with a correct reported balance should pass."
+def test_reconcile_invoice_allocations_returns_settled_when_fully_settled() -> None:
+    """A fully allocated invoice with a correct reported balance should pass."""
     invoices = pd.DataFrame(
         {
             "Invoice ID": ["INV-1001"],
             "Invoice Total": [100_000.00],
-            "Outstanding Amount": [0.00],
+            "Reported Outstanding Amount": [0.00],
         }
     )
 
@@ -29,9 +29,9 @@ def test_reconcile_invoice_allocations_returns_pass_when_fully_settled() -> None
 
     assert result.loc[0, "Allocated Amount"] == 100_000.00
     assert result.loc[0, "Calculated Outstanding Amount"] == 0.00
-    assert result.loc[0, "Settlement Status"] == "PASS"
+    assert result.loc[0, "Settlement Position"] == "SETTLED"
     assert result.loc[0, "Outstanding Variance"] == 0.00
-    assert result.loc[0, "Reported Balance Status"] == "PASS"
+    assert result.loc[0, "Balance Reconciliation Status"] == "PASS"
 
 
 def test_reconcile_invoice_allocations_sums_multiple_payments() -> None:
@@ -40,7 +40,7 @@ def test_reconcile_invoice_allocations_sums_multiple_payments() -> None:
         {
             "Invoice ID": ["INV-1002"],
             "Invoice Total": [100_000.00],
-            "Outstanding Amount": [15_000.00],
+            "Reported Outstanding Amount": [15_000.00],
         }
     )
 
@@ -61,8 +61,9 @@ def test_reconcile_invoice_allocations_sums_multiple_payments() -> None:
 
     assert result.loc[0, "Allocated Amount"] == 85_000.00
     assert result.loc[0, "Calculated Outstanding Amount"] == 15_000.00
-    assert result.loc[0, "Settlement Status"] == "REVIEW"
-    assert result.loc[0, "Reported Balance Status"] == "PASS"
+    assert result.loc[0, "Settlement Position"] == "OPEN BALANCE"
+    assert result.loc[0, "Outstanding Variance"] == 0.00
+    assert result.loc[0, "Balance Reconciliation Status"] == "PASS"
 
 
 def test_reconcile_invoice_allocations_treats_missing_allocation_as_zero() -> None:
@@ -71,7 +72,7 @@ def test_reconcile_invoice_allocations_treats_missing_allocation_as_zero() -> No
         {
             "Invoice ID": ["INV-1003"],
             "Invoice Total": [50_000.00],
-            "Outstanding Amount": [50_000.00],
+            "Reported Outstanding Amount": [50_000.00],
         }
     )
 
@@ -86,17 +87,18 @@ def test_reconcile_invoice_allocations_treats_missing_allocation_as_zero() -> No
 
     assert result.loc[0, "Allocated Amount"] == 0.00
     assert result.loc[0, "Calculated Outstanding Amount"] == 50_000.00
-    assert result.loc[0, "Settlement Status"] == "REVIEW"
-    assert result.loc[0, "Reported Balance Status"] == "PASS"
+    assert result.loc[0, "Settlement Position"] == "OPEN BALANCE"
+    assert result.loc[0, "Outstanding Variance"] == 0.00
+    assert result.loc[0, "Balance Reconciliation Status"] == "PASS"
 
 
-def test_reconcile_invoice_allocations_returns_fail_when_overallocated() -> None:
-    """Allocations exceeding the invoice total should fail."""
+def test_reconcile_invoice_allocations_returns_overpaid_when_overallocated() -> None:
+    """Allocations exceeding the invoice total should show an overpaid position."""
     invoices = pd.DataFrame(
         {
             "Invoice ID": ["INV-1004"],
             "Invoice Total": [50_000.00],
-            "Outstanding Amount": [-250.00],
+            "Reported Outstanding Amount": [-250.00],
         }
     )
 
@@ -110,17 +112,18 @@ def test_reconcile_invoice_allocations_returns_fail_when_overallocated() -> None
     result = reconcile_invoice_allocations(invoices, allocations)
 
     assert result.loc[0, "Calculated Outstanding Amount"] == -250.00
-    assert result.loc[0, "Settlement Status"] == "FAIL"
-    assert result.loc[0, "Reported Balance Status"] == "PASS"
+    assert result.loc[0, "Settlement Position"] == "OVERPAID"
+    assert result.loc[0, "Outstanding Variance"] == 0.00
+    assert result.loc[0, "Balance Reconciliation Status"] == "PASS"
 
 
 def test_reconcile_invoice_allocations_flags_reported_balance_mismatch() -> None:
-    """An incorrect workbook outstanding balance should require review."""
+    """An incorrect reported outstanding balance should require review."""
     invoices = pd.DataFrame(
         {
             "Invoice ID": ["INV-1005"],
             "Invoice Total": [80_000.00],
-            "Outstanding Amount": [10_000.00],
+            "Reported Outstanding Amount": [10_000.00],
         }
     )
 
@@ -134,9 +137,9 @@ def test_reconcile_invoice_allocations_flags_reported_balance_mismatch() -> None
     result = reconcile_invoice_allocations(invoices, allocations)
 
     assert result.loc[0, "Calculated Outstanding Amount"] == 20_000.00
+    assert result.loc[0, "Settlement Position"] == "OPEN BALANCE"
     assert result.loc[0, "Outstanding Variance"] == 10_000.00
-    assert result.loc[0, "Settlement Status"] == "REVIEW"
-    assert result.loc[0, "Reported Balance Status"] == "REVIEW"
+    assert result.loc[0, "Balance Reconciliation Status"] == "REVIEW"
 
 
 def test_reconcile_invoice_allocations_accepts_values_within_tolerance() -> None:
@@ -145,7 +148,7 @@ def test_reconcile_invoice_allocations_accepts_values_within_tolerance() -> None
         {
             "Invoice ID": ["INV-1006"],
             "Invoice Total": [100.00],
-            "Outstanding Amount": [0.00],
+            "Reported Outstanding Amount": [0.00],
         }
     )
 
@@ -165,9 +168,9 @@ def test_reconcile_invoice_allocations_accepts_values_within_tolerance() -> None
     assert result.loc[0, "Calculated Outstanding Amount"] == pytest.approx(
         0.005
     )
-    assert result.loc[0, "Settlement Status"] == "PASS"
+    assert result.loc[0, "Settlement Position"] == "SETTLED"
     assert result.loc[0, "Outstanding Variance"] == pytest.approx(0.005)
-    assert result.loc[0, "Reported Balance Status"] == "PASS"
+    assert result.loc[0, "Balance Reconciliation Status"] == "PASS"
 
 
 def test_reconcile_invoice_allocations_raises_for_nonnumeric_amount() -> None:
@@ -176,7 +179,7 @@ def test_reconcile_invoice_allocations_raises_for_nonnumeric_amount() -> None:
         {
             "Invoice ID": ["INV-1007"],
             "Invoice Total": ["invalid"],
-            "Outstanding Amount": [0.00],
+            "Reported Outstanding Amount": [0.00],
         }
     )
 
@@ -189,5 +192,3 @@ def test_reconcile_invoice_allocations_raises_for_nonnumeric_amount() -> None:
 
     with pytest.raises(ValueError):
         reconcile_invoice_allocations(invoices, allocations)
-
-

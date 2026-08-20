@@ -23,7 +23,7 @@ def test_payment_review_becomes_medium_unallocated_exception() -> None:
         columns=[
             "Invoice ID",
             "Outstanding Variance",
-            "Reported Balance Status",
+            "Balance Reconciliation Status",
             "Exception Classification",
         ]
     )
@@ -56,7 +56,7 @@ def test_payment_fail_becomes_high_overallocated_exception() -> None:
         columns=[
             "Invoice ID",
             "Outstanding Variance",
-            "Reported Balance Status",
+            "Balance Reconciliation Status",
             "Exception Classification",
         ]
     )
@@ -86,7 +86,7 @@ def test_active_invoice_exception_becomes_high_action_item() -> None:
         {
             "Invoice ID": ["INV-1001"],
             "Outstanding Variance": [7_500.00],
-            "Reported Balance Status": ["REVIEW"],
+            "Balance Reconciliation Status": ["REVIEW"],
             "Exception Classification": ["ACTION REQUIRED"],
         }
     )
@@ -118,7 +118,7 @@ def test_controlled_exclusion_remains_visible_with_info_severity() -> None:
         {
             "Invoice ID": ["INV-1002"],
             "Outstanding Variance": [1_500.00],
-            "Reported Balance Status": ["REVIEW"],
+            "Balance Reconciliation Status": ["REVIEW"],
             "Exception Classification": ["CONTROLLED EXCLUSION"],
         }
     )
@@ -151,7 +151,7 @@ def test_clear_records_are_excluded_from_exception_report() -> None:
         {
             "Invoice ID": ["INV-1003"],
             "Outstanding Variance": [0.00],
-            "Reported Balance Status": ["PASS"],
+            "Balance Reconciliation Status": ["PASS"],
             "Exception Classification": ["CLEAR"],
         }
     )
@@ -177,7 +177,7 @@ def test_raises_when_payment_column_is_missing() -> None:
         columns=[
             "Invoice ID",
             "Outstanding Variance",
-            "Reported Balance Status",
+            "Balance Reconciliation Status",
             "Exception Classification",
         ]
     )

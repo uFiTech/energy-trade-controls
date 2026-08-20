@@ -14,7 +14,7 @@ def classify_invoice_balance_exceptions(
 
     Args:
         reconciliation: Invoice reconciliation results containing Invoice ID
-            and Reported Balance Status.
+            and Balance Reconciliation Status.
         invoices: Invoice records containing Invoice ID and Invoice Status.
 
     Returns:
@@ -27,7 +27,7 @@ def classify_invoice_balance_exceptions(
 
     reconciliation_required = {
         "Invoice ID",
-        "Reported Balance Status",
+        "Balance Reconciliation Status",
     }
 
     invoice_required = {
@@ -90,12 +90,12 @@ def classify_invoice_balance_exceptions(
     classified["Exception Classification"] = "CLEAR"
 
     active_exception_mask = (
-        classified["Reported Balance Status"].eq("REVIEW")
+        classified["Balance Reconciliation Status"].eq("REVIEW")
         & classified["Settlement Scope"].eq("ACTIVE")
     )
 
     controlled_exclusion_mask = (
-        classified["Reported Balance Status"].eq("REVIEW")
+        classified["Balance Reconciliation Status"].eq("REVIEW")
         & classified["Settlement Scope"].eq("OUT OF SCOPE")
     )
 

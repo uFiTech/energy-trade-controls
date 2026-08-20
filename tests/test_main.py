@@ -32,7 +32,7 @@ def test_run_controls_builds_review_summary_and_output(
         {
             "Invoice ID": ["INV-1001"],
             "Invoice Total": [100.00],
-            "Outstanding Amount": [0.00],
+            "Reported Outstanding Amount": [0.00],
             "Invoice Status": ["Open"],
         }
     )
@@ -113,7 +113,7 @@ def test_run_controls_returns_pass_when_no_exceptions(
         {
             "Invoice ID": ["INV-1002"],
             "Invoice Total": [100.00],
-            "Outstanding Amount": [0.00],
+            "Reported Outstanding Amount": [0.00],
             "Invoice Status": ["Paid"],
         }
     )

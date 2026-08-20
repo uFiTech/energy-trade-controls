@@ -16,7 +16,7 @@ REPORT_COLUMNS: list[str] = [
 
 def build_consolidated_exception_report(
         payment_reconciliation: pd.DataFrame,
-        invoice_classification:pd.DataFrame,
+        invoice_classification: pd.DataFrame,
 ) -> pd.DataFrame:
     """Combine payment and invoice exceptions into one operational report.
 
@@ -40,7 +40,7 @@ def build_consolidated_exception_report(
     required_invoice_columns = {
         "Invoice ID",
         "Outstanding Variance",
-        "Reported Balance Status",
+        "Balance Reconciliation Status",
         "Exception Classification",
     }
 
@@ -72,7 +72,7 @@ def build_consolidated_exception_report(
 
     payment_report = pd.DataFrame(
         {
-             "Control Area": "PAYMENT",
+            "Control Area": "PAYMENT",
             "Record ID": payment_exceptions["Payment ID"],
             "Exception Amount": (
                 payment_exceptions["Unallocated Amount"].abs()
@@ -116,7 +116,7 @@ def build_consolidated_exception_report(
                 invoice_exceptions["Outstanding Variance"].abs()
             ),
             "Source Status": (
-                invoice_exceptions["Reported Balance Status"]
+                invoice_exceptions["Balance Reconciliation Status"]
             ),
             "Classification": (
                 invoice_exceptions["Exception Classification"]

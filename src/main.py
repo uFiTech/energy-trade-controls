@@ -30,16 +30,16 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 DEFAULT_INPUT_PATH = (
     PROJECT_ROOT
-    /"data"
-    /"input"
-    /"portfolio.xlsx"
+    / "data"
+    / "input"
+    / "portfolio.xlsx"
 )
 
 DEFAULT_OUTPUT_PATH = (
     PROJECT_ROOT
-    /"data"
-    /"output"
-   /"settlement_exceptions.xlsx"
+    / "data"
+    / "output"
+   / "settlement_exceptions.xlsx"
 )
 
 

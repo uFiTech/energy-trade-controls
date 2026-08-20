@@ -1,4 +1,4 @@
-"""Controls for reconciling invoices ro payment allocations."""
+"""Controls for reconciling invoices to payment allocations."""
 
 import pandas as pd
 
@@ -10,14 +10,14 @@ def reconcile_invoice_allocations(
     """Reconcile invoice totals to payment allocations and reported balances.
     Args:
         invoices: Invoice records containing Invoice ID, Invoice Total,
-            and Outstanding Amount.
+            and Reported Outstanding Amount.
         payment_allocations: Allocation records containing Invoice ID
             and Applied Amount.
         tolerance: Permitted absolute reconciliation difference.
         
     Returns:
         A DataFrame containing calculated outstanding amounts,
-        settlement statuses, and reported-balance comparison results.
+        settlement positions, and reported-balance comparison results.
 
     Raises:
         ValueError: If invoice or allocation amounts are not numeric.
@@ -27,7 +27,7 @@ def reconcile_invoice_allocations(
         [
             "Invoice ID",
             "Invoice Total",
-            "Outstanding Amount",
+            "Reported Outstanding Amount",
         ]
     ].copy()
 
@@ -43,8 +43,8 @@ def reconcile_invoice_allocations(
         errors="raise",
     )
 
-    invoice_data["Outstanding Amount"] = pd.to_numeric(
-        invoice_data["Outstanding Amount"],
+    invoice_data["Reported Outstanding Amount"] = pd.to_numeric(
+        invoice_data["Reported Outstanding Amount"],
         errors="raise",
     )
 
@@ -80,32 +80,32 @@ def reconcile_invoice_allocations(
         - reconciliation["Allocated Amount"]
     )
 
-    reconciliation["Settlement Status"] = "PASS"
+    reconciliation["Settlement Position"] = "SETTLED"
 
-    review_mask = (
+    open_balance_mask = (
         reconciliation["Calculated Outstanding Amount"] > tolerance
     )
 
-    fail_mask = (
+    overpaid_mask = (
         reconciliation["Calculated Outstanding Amount"] < -tolerance
     )
 
     reconciliation.loc[
-        review_mask,
-        "Settlement Status",
-    ] = "REVIEW"
+        open_balance_mask,
+        "Settlement Position",
+    ] = "OPEN BALANCE"
 
     reconciliation.loc[
-        fail_mask,
-        "Settlement Status",
-    ] = "FAIL"
+        overpaid_mask,
+        "Settlement Position",
+    ] = "OVERPAID"
 
     reconciliation["Outstanding Variance"] = (
         reconciliation["Calculated Outstanding Amount"]
-        - reconciliation["Outstanding Amount"]
+        - reconciliation["Reported Outstanding Amount"]
     )
 
-    reconciliation["Reported Balance Status"] = "PASS"
+    reconciliation["Balance Reconciliation Status"] = "PASS"
 
     balance_review_mask = (
         reconciliation["Outstanding Variance"].abs() > tolerance
@@ -113,7 +113,7 @@ def reconcile_invoice_allocations(
 
     reconciliation.loc[
         balance_review_mask,
-        "Reported Balance Status",
+        "Balance Reconciliation Status",
     ] = "REVIEW"
 
     return reconciliation

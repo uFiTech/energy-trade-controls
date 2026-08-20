@@ -2,9 +2,34 @@
 
 A Python-based settlement-control framework for a fictional physical-energy trading portfolio.
 
-The project ingests governed Excel data, independently reconciles payments and invoices, identifies settlement exceptions, distinguishes active issues from controlled exclusions, links related observations into settlement cases, and produces a formatted Excel exception report.
+The project ingests governed Excel data, reconciles payments and invoices, identifies settlement exceptions, distinguishes active issues from controlled exclusions, links related observations into settlement cases, and produces a formatted Excel exception report.
 
 A fully synthetic demo is included so the workflow can be cloned, tested, and run without access to the larger portfolio workbook.
+
+## Contents
+
+- [Business problem](#business-problem)
+- [Control workflow](#control-workflow)
+- [Key controls](#key-controls)
+  - [Payment allocation reconciliation](#1-payment-allocation-reconciliation)
+  - [Invoice allocation reconciliation](#2-invoice-allocation-reconciliation)
+  - [Invoice exception classification](#3-invoice-exception-classification)
+  - [Consolidated exception reporting](#4-consolidated-exception-reporting)
+  - [Settlement case linkage](#5-settlement-case-linkage)
+- [Quick-start demo](#quick-start-demo)
+- [Expected demo result](#expected-demo-result)
+- [Generated Excel report](#generated-excel-report)
+- [Synthetic demo scenarios](#synthetic-demo-scenarios)
+- [Testing](#testing)
+- [Project structure](#project-structure)
+- [Technical design](#technical-design)
+- [Design principles](#design-principles)
+- [Full portfolio context](#full-portfolio-context)
+- [Technology](#technology)
+- [Development approach](#development-approach)
+- [Current scope](#current-scope)
+- [Potential future enhancements](#potential-future-enhancements)
+- [Portfolio objective](#portfolio-objective)
 
 ---
 
@@ -14,17 +39,17 @@ Physical commodity settlements rarely behave like a simple one-invoice / one-pay
 
 Operational scenarios can include:
 
-* one payment allocated across multiple invoices;
-* multiple payments applied to one invoice;
-* partial cash receipts;
-* unapplied cash;
-* open invoice balances;
-* overallocations;
-* cancelled or rejected invoices;
-* reported balances that disagree with transaction-level evidence;
-* multiple control observations relating to the same economic issue.
+- one payment allocated across multiple invoices;
+- multiple payments applied to one invoice;
+- partial cash receipts;
+- unapplied cash;
+- open invoice balances;
+- overallocations;
+- cancelled or rejected invoices;
+- reported balances that disagree with an independently re-performed transaction-level calculation;
+- multiple control observations relating to the same economic issue.
 
-The framework therefore answers two independent questions.
+The framework therefore answers two distinct control questions.
 
 ### Payment side
 
@@ -55,18 +80,18 @@ Structural / Data Validation
 Payment Reconciliation        Invoice Reconciliation
         |                             |
         |                             v
-        |                    Balance Classification
+        |                   Exception Classification
         |                             |
         +--------------+--------------+
                        |
                        v
-             Consolidated Exceptions
+              Consolidated Exceptions
                        |
                        v
-             Settlement Case Linkage
+              Settlement Case Linkage
                        |
                        v
-              Formatted Excel Report
+               Formatted Excel Report
 ```
 
 Settlement cases are linked using actual payment-allocation records rather than matching exception amounts.
@@ -79,7 +104,7 @@ Matching amounts may be a useful clue, but they are not treated as authoritative
 
 ### 1. Payment allocation reconciliation
 
-Each payment is independently reconciled to the total amount allocated across invoices.
+Each payment is reconciled to the total amount allocated across invoices.
 
 ```text
 Payment Amount - Allocated Amount = Unallocated Amount
@@ -88,9 +113,9 @@ Payment Amount - Allocated Amount = Unallocated Amount
 Status logic:
 
 ```text
-Within ±$0.01 tolerance      -> PASS
-Positive residual            -> REVIEW
-Negative residual            -> FAIL
+Within +/- $0.01 tolerance  -> PASS
+Positive residual           -> REVIEW
+Negative residual           -> FAIL
 ```
 
 A positive residual represents cash that has not yet been fully allocated.
@@ -101,7 +126,7 @@ A negative residual represents invoice allocations exceeding the recorded paymen
 
 ### 2. Invoice allocation reconciliation
 
-Each invoice is reconciled independently to payment-allocation records.
+For each invoice, the application re-performs expected outstanding balance from Invoice Total and Payment Allocation detail, then compares that result with the source-system reported balance.
 
 ```text
 Invoice Total - Allocated Amount = Calculated Outstanding Amount
@@ -117,25 +142,35 @@ Reported Outstanding Amount
 Outstanding Variance
 ```
 
-Settlement status:
+Settlement position:
 
 ```text
-Within tolerance             -> PASS
-Positive outstanding amount  -> REVIEW
-Negative outstanding amount  -> FAIL
+Within +/- $0.01             -> SETTLED
+Positive outstanding amount  -> OPEN BALANCE
+Negative outstanding amount  -> OVERPAID
 ```
 
-Reported-balance status:
+Balance reconciliation status:
 
 ```text
-Variance within ±$0.01       -> PASS
-Variance outside tolerance   -> REVIEW
+Variance within +/- $0.01   -> PASS
+Variance outside tolerance  -> REVIEW
 ```
 
-This separates two questions:
+This separates two different questions:
 
-1. Has the invoice actually been settled?
-2. Does the reported balance agree with transaction-level allocation evidence?
+1. Settlement Position asks what the invoice's economic balance is:
+   settled, still open, or overpaid.
+
+2. Balance Reconciliation Status asks whether the source-system
+   reported balance agrees with the balance independently re-performed
+   from Invoice Total and Payment Allocation detail.
+
+Reported Outstanding Amount is the source-system reported balance snapshot.
+
+Calculated Outstanding Amount is independently re-performed from Invoice Total and payment-allocation detail.
+
+This provides an independent re-performance of the balance calculation. Full data-source independence depends on the architecture of the originating systems.
 
 ---
 
@@ -207,8 +242,11 @@ The linkage supports:
 
 ```text
 one payment -> one invoice
+
 one payment -> many invoices
+
 many payments -> one invoice
+
 connected settlement chains
 ```
 
@@ -275,7 +313,6 @@ Control observations:            5
 Settlement cases:                3
 Action-required cases:           2
 Controlled-exclusion cases:      1
-
 Overall status: REVIEW
 ```
 
@@ -312,10 +349,10 @@ Controlled-Exclusion Cases
 
 Presentation features include:
 
-* formatted headers;
-* frozen panes;
-* readable column widths;
-* status highlighting.
+- formatted headers;
+- frozen panes;
+- readable column widths;
+- status highlighting.
 
 ### Settlement Exceptions
 
@@ -336,12 +373,12 @@ Link Basis
 
 Presentation features include:
 
-* Excel table filters;
-* frozen headers;
-* currency formatting;
-* readable column widths;
-* severity highlighting;
-* action-required and controlled-exclusion highlighting.
+- Excel table filters;
+- frozen headers;
+- currency formatting;
+- readable column widths;
+- severity highlighting;
+- action-required and controlled-exclusion highlighting.
 
 Formatting is applied only after control calculations have completed.
 
@@ -351,13 +388,13 @@ The presentation layer does not alter reconciliation values, statuses, classific
 
 ## Synthetic demo scenarios
 
-| Scenario                                     | Purpose                                                      |
-| -------------------------------------------- | ------------------------------------------------------------ |
-| Fully settled payment and invoice            | Clean PASS result                                            |
-| Partially allocated payment                  | Demonstrates unallocated cash                                |
-| Incorrectly reported zero invoice balance    | Demonstrates a balance mismatch                              |
-| Overallocated payment                        | Demonstrates allocations exceeding cash received             |
-| Cancelled invoice with retained discrepancy  | Demonstrates a controlled exclusion                          |
+| Scenario | Purpose |
+| --- | --- |
+| Fully settled payment and invoice | Clean PASS result |
+| Partially allocated payment | Demonstrates unallocated cash |
+| Incorrectly reported zero invoice balance | Demonstrates a balance mismatch |
+| Overallocated payment | Demonstrates allocations exceeding the recorded payment amount |
+| Cancelled invoice with retained discrepancy | Demonstrates a controlled exclusion |
 | Legitimate open invoice with correct balance | Shows that an open invoice is not automatically an exception |
 
 The demo is intentionally small so each control path can be understood quickly.
@@ -466,7 +503,7 @@ tblInvoices
 
 The reader validates the workbook and requested table, reads the table's defined range, returns a pandas DataFrame, and closes the workbook without saving it.
 
-Production ingestion functions treat source workbooks as read-only inputs.
+The ingestion functions treat source workbooks as read-only inputs.
 
 ### Workbook governance
 
@@ -485,7 +522,7 @@ Structural integrity and financial reconciliation are intentionally separate con
 
 ### Source immutability
 
-Input workbooks are not saved by the production ingestion layer.
+Input workbooks are not saved by the ingestion layer.
 
 Generated reports are written separately under:
 
@@ -506,24 +543,31 @@ It may change presentation properties such as fills, column widths, number forma
 ## Design principles
 
 1. **Calculate first, interpret second**
+
    Reconciliation mathematics are performed before operational status is used for classification.
 
 2. **Preserve exceptions rather than hiding them**
+
    Cancelled or excluded records remain visible when they contain a variance.
 
 3. **Use transactional relationships instead of inference**
+
    Settlement cases are linked using payment-allocation records rather than amount matching.
 
 4. **Separate observations from economic cases**
+
    Multiple control findings can belong to one underlying settlement issue.
 
 5. **Keep source workbooks immutable**
+
    Inputs are read without being rewritten.
 
 6. **Test controls independently before orchestration**
+
    Reconciliation, validation, classification, linkage, and reporting functions are tested individually before being combined.
 
 7. **Separate presentation from control logic**
+
    Workbook formatting occurs only after control results have been produced.
 
 ---
@@ -536,7 +580,7 @@ The broader project was developed alongside a larger fictional workbook:
 
 ```text
 Houston Energy Trade Operations and Demurrage Portfolio
-Version 23
+Version 25
 ```
 
 That workbook contains a wider operational model covering areas including:
@@ -559,7 +603,7 @@ Regression Tests
 
 The larger workbook is maintained separately for portfolio and interview walkthrough purposes.
 
-The public Python repository uses independently generated synthetic data so it can be reviewed and reproduced without requiring that workbook.
+The public Python repository uses separately generated synthetic data so it can be reviewed and reproduced without requiring that workbook.
 
 ---
 
@@ -649,7 +693,7 @@ These are future enhancements and are not represented as currently implemented f
 This project demonstrates the combination of:
 
 ```text
-Physical-energy trade operations knowledge
+Physical-energy trade operations concepts
 Settlement and reconciliation reasoning
 Control design
 Excel data governance
